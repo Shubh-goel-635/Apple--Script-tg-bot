@@ -11,10 +11,13 @@ from StopSignal import stop_event
 STORES_PIN_CODE = []
 PRODUCTS = []
 
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    "Accept": "application/json",
+    "Referer": "https://www.apple.com/in/shop/buy-iphone"
+}
 
 async def productAvailabilityCheck(session, queue):
-    print(STORES_PIN_CODE)
-    print(PRODUCTS)
     for pincode in STORES_PIN_CODE:
         if stop_event.is_set():
             return  # stop immediately
@@ -32,7 +35,7 @@ async def productAvailabilityCheck(session, queue):
 
                 url = f"https://www.apple.com/in/shop/pickup-message-recommendations?fae=true&mts.0=regular&location={pincode}&product={code}"
                 try:
-                    async with session.get(url, timeout=10) as response:
+                    async with session.get(url, headers= headers, timeout=10) as response:
                         data = await response.json()
 
                     stores = data.get("body", {}).get("PickupMessage", {}).get("stores", [])
