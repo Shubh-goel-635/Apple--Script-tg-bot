@@ -73,6 +73,13 @@ class HealthHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"OK")
 
+    def do_HEAD(self):
+        self.send_response(200)
+        self.end_headers()
+
+    def log_message(self, format, *args):
+        return  # silence logs (optional)
+
 
 def run_health_server():
     server = HTTPServer(("0.0.0.0", 10000), HealthHandler)
