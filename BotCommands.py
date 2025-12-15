@@ -7,11 +7,11 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 from dotenv import load_dotenv
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from StopSignal import stop_event
 
-
 from StockCheck import product_stock_loop
-
 
 queue = asyncio.Queue()  # shared queue
 stock_task = None
@@ -65,6 +65,21 @@ async def telegram_sender(bot, queue):
             print("Telegram send error:", e)
         finally:
             queue.task_done()
+
+
+class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"OK")
+
+
+def run_health_server():
+    server = HTTPServer(("0.0.0.0", 10000), HealthHandler)
+    server.serve_forever()
+
+
+threading.Thread(target=run_health_server, daemon=True).start()
 
 load_dotenv(dotenv_path='local.env', override=False)
 BOT_TOKEN = os.getenv("BOT_TOKEN")
