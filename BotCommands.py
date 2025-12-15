@@ -1,14 +1,17 @@
 import asyncio
+import json
+import os
 import queue
 
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-from StockCheck import product_stock_loop
+from dotenv import load_dotenv
 from StopSignal import stop_event
 
-BOT_TOKEN = "8476987280:AAFDZ_FSEheBxTf-2LyKmrBDOKyqsKfcVDA"
-chat_id = -1003686843772
+
+from StockCheck import product_stock_loop
+
 
 queue = asyncio.Queue()  # shared queue
 stock_task = None
@@ -57,13 +60,17 @@ async def telegram_sender(bot, queue):
         if message is None:  # stop signal
             break
         try:
-            await bot.send_message(chat_id=chat_id, text=message, parse_mode="Markdown")
+            await bot.send_message(chat_id=CHAT_ID, text=message, parse_mode="Markdown")
         except Exception as e:
             print("Telegram send error:", e)
         finally:
             queue.task_done()
 
-
+load_dotenv(dotenv_path='local.env', override=False)
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
+print(BOT_TOKEN)
+print(CHAT_ID)
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 app.add_handler(CommandHandler("start", start_command))
 app.add_handler(CommandHandler("stop", stop_command))

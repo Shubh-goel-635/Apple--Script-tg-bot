@@ -1,22 +1,20 @@
 import asyncio
+import json
+import os
 from datetime import datetime
+from dotenv import load_dotenv
 
 import aiohttp
 
 from StopSignal import stop_event
 
-STORES_PIN_CODE = [
-    110017,
-    560092
-]
-
-PRODUCTS = [
-    {'name': 'iphone 17', 'codes': ['MG6M4HN/A', 'MG6N4HN/A', 'MG6L4HN/A', 'MG6K4HN/A', 'MG6J4HN/A']},
-    # {'name': 'iphone 16', 'codes': ['MYEC3HN/A', 'MYED3HN/A', 'MYEA3HN/A', 'MYE93HN/A', 'MYE73HN/A']}
-]
+STORES_PIN_CODE = []
+PRODUCTS = []
 
 
 async def productAvailabilityCheck(session, queue):
+    print(STORES_PIN_CODE)
+    print(PRODUCTS)
     for pincode in STORES_PIN_CODE:
         if stop_event.is_set():
             return  # stop immediately
@@ -80,6 +78,10 @@ async def productAvailabilityCheck(session, queue):
 
 
 async def product_stock_loop(queue):
+    global STORES_PIN_CODE, PRODUCTS
+    STORES_PIN_CODE = json.loads(os.getenv("STORES_PIN_CODE"))
+    PRODUCTS = json.loads(os.getenv("PRODUCTS"))
+    await queue.put(format_stock_check_message(STORES_PIN_CODE, PRODUCTS))
     count = 1;
     async with aiohttp.ClientSession() as session:
         while not stop_event.is_set():
@@ -87,3 +89,26 @@ async def product_stock_loop(queue):
             count += 1
             await productAvailabilityCheck(session, queue)
             await asyncio.sleep(1)
+
+
+def format_stock_check_message(pins, products):
+    lines = []
+
+    lines.append("🔍 Checking Stock Availability\n")
+
+    # Pin codes
+    lines.append("📍 Pin Codes:")
+    for pin in pins:
+        lines.append(f"• {pin}")
+
+    lines.append("")  # blank line
+
+    # Devices
+    lines.append("📱 Devices:")
+    for product in products:
+        lines.append(f"• {product['name']}")
+        codes = ", ".join(product.get("codes", []))
+        lines.append(f"  └ {codes}")
+        lines.append("")  # blank line after each device
+
+    return "\n".join(lines).strip()
